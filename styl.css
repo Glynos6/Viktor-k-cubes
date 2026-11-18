@@ -1,0 +1,173 @@
+/* Viktorovy kostky – online dice. Mobile first, no external resources. */
+@font-face {
+  font-family: "Russo";
+  src: url("russo.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  --pozadi: #1c130e;       /* cellar */
+  --pozadi2: #2a1d15;
+  --karta: #33241a;
+  --okraj: #4a3526;
+  --text: #f6ecdc;
+  --tlumene: #c9b49a;
+  --pivo: #f0c419;         /* same yellow as the beer die filament */
+  --pena: #fff6e0;
+  --cervena: #c8302c;
+  --doba: 1.2s;            /* roll animation, must match DOBA in kostky.js */
+  --strana: min(42vw, 190px);
+  color-scheme: dark;
+}
+@media (prefers-reduced-motion: reduce) { :root { --doba: 0.25s; } }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(120% 70% at 50% 0%, var(--pozadi2), var(--pozadi) 70%) fixed, var(--pozadi);
+  color: var(--text);
+  font: 17px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+main { flex: 1; width: 100%; max-width: 560px; margin: 0 auto; padding: 0 16px; }
+[hidden] { display: none !important; }
+button, a { -webkit-tap-highlight-color: transparent; }
+
+/* ---- header */
+.hlava {
+  position: relative;
+  max-width: 560px; width: 100%; margin: 0 auto;
+  padding: 18px 16px 10px;
+  text-align: center;
+}
+h1, h2, .volba strong, .titul, .soucet, .akce button, .zpet, output {
+  font-family: "Russo", system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+h1 { margin: 0; font-size: 1.9rem; color: var(--pivo); line-height: 1.1; }
+h1 .maly { display: block; font-size: 0.95rem; color: var(--tlumene); letter-spacing: 0.25em; text-transform: uppercase; }
+.zpet {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-40%);
+  background: none; border: 0; color: var(--tlumene); font-size: 1.05rem; padding: 12px 8px; cursor: pointer;
+}
+
+/* ---- menu */
+.vyzva { text-align: center; color: var(--tlumene); margin: 4px 0 14px; }
+.tlacitka { display: grid; gap: 12px; padding-bottom: 20px; }
+.volba {
+  display: flex; align-items: center; gap: 16px;
+  min-height: 84px; padding: 12px 16px;
+  background: var(--karta); border: 2px solid var(--okraj); border-radius: 18px;
+  color: var(--text); text-decoration: none;
+  box-shadow: 0 3px 0 #0006;
+  transition: transform 0.08s, border-color 0.15s;
+}
+.volba:active { transform: translateY(2px); box-shadow: 0 1px 0 #0006; }
+.volba:hover, .volba:focus-visible { border-color: var(--pivo); outline: none; }
+.volba .ikona { display: flex; gap: 6px; flex: none; }
+.volba .plocha { width: 56px; height: 56px; }
+.volba-boj .plocha { width: 48px; height: 48px; }
+.volba-boj .plocha:first-child { transform: rotate(-8deg); }
+.volba-boj .plocha:last-child { transform: rotate(7deg) translateY(6px); }
+.volba .text { display: flex; flex-direction: column; }
+.volba strong { font-size: 1.45rem; line-height: 1.15; }
+.volba small { color: var(--tlumene); font-size: 0.95rem; }
+
+/* a flat die face (menu, result) */
+.plocha {
+  display: inline-block; flex: none;
+  border-radius: 22%;
+  box-shadow: inset 0 0 0 1px #0003, 0 2px 4px #0007;
+}
+.plocha svg { display: block; width: 100%; height: 100%; }
+
+/* ---- roll view */
+.hod { text-align: center; padding-bottom: 20px; }
+.hod h2 { margin: 0 0 4px; font-size: 1.6rem; color: var(--pivo); }
+.stul {
+  display: flex; justify-content: center; align-items: center; gap: 12%;
+  height: calc(var(--strana) * 1.75);
+  perspective: 900px;
+}
+.stul.dve { --strana: min(32vw, 150px); }
+.kostka { width: var(--strana); height: var(--strana); --pul: calc(var(--strana) / 2); }
+.skok { width: 100%; height: 100%; transform-style: preserve-3d; }
+.skok.hazi { animation: skok var(--doba) cubic-bezier(.3, .7, .4, 1); }
+.dve .kostka:last-child .skok.hazi { animation-duration: calc(var(--doba) * 0.92); }
+@keyframes skok {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  25%  { transform: translate3d(-4%, -22%, 60px) scale(1.04); }
+  55%  { transform: translate3d(3%, 0, 0) scale(1); }
+  72%  { transform: translate3d(0, -10%, 20px); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+.krychle {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform var(--doba) cubic-bezier(.15, .6, .25, 1);
+}
+.strana {
+  position: absolute; inset: 0;
+  border-radius: 16%;
+  box-shadow: inset 0 0 0 1px #0002, inset 0 0 calc(var(--strana) * 0.12) #0003;
+  backface-visibility: hidden;
+}
+.strana svg { width: 100%; height: 100%; display: block; }
+
+/* result */
+.vysledek { min-height: 190px; transition: opacity 0.2s; }
+.vysledek.ceka { opacity: 0; }
+.radek { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.radek .plocha { width: 64px; height: 64px; }
+.titul { font-size: 2rem; line-height: 1.1; text-align: left; }
+.co { margin: 10px auto 0; max-width: 30em; font-size: 1.1rem; }
+.radek.boj { gap: 10px; }
+.radek.boj .plocha { width: 56px; height: 56px; }
+.op { font-family: "Russo", system-ui, sans-serif; font-size: 1.8rem; color: var(--tlumene); }
+.op.bonus { color: var(--pivo); }
+.soucet { font-size: 3.4rem; line-height: 1; color: var(--pivo); min-width: 1.4em; }
+.pravidla-boje { text-align: left; font-size: 1rem; }
+.pravidla-boje p { margin: 4px 0; }
+.pravidla-boje a { color: var(--pivo); }
+
+/* fight bonus */
+.modifikator {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin: 14px auto 0; padding: 8px 12px;
+  background: var(--karta); border: 2px solid var(--okraj); border-radius: 16px;
+  width: fit-content;
+}
+.mod-popis { color: var(--tlumene); font-size: 0.95rem; }
+.modifikator button {
+  width: 52px; height: 52px; border-radius: 14px;
+  border: 2px solid var(--okraj); background: var(--pozadi2); color: var(--text);
+  font-size: 1.8rem; line-height: 1; cursor: pointer;
+}
+.modifikator button:active { background: var(--okraj); }
+.modifikator output { font-size: 1.6rem; min-width: 2.2em; text-align: center; color: var(--pivo); }
+
+/* buttons */
+/* sticky at the bottom: the thumb finds "Hodit znovu" in the same place every time */
+.akce {
+  position: sticky; bottom: 0; z-index: 2;
+  display: grid; grid-template-columns: 2fr 1fr; gap: 10px;
+  margin-top: 18px; padding: 14px 0 calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(#1c130e00, var(--pozadi) 22%);
+}
+.akce button {
+  min-height: 64px; border-radius: 16px; font-size: 1.3rem; cursor: pointer;
+  border: 2px solid transparent;
+}
+.hlavni { background: var(--pivo); color: #2a1d10; box-shadow: 0 4px 0 #a07f08; }
+.hlavni:active { transform: translateY(3px); box-shadow: 0 1px 0 #a07f08; }
+.vedlejsi { background: var(--karta); color: var(--text); border-color: var(--okraj) !important; }
+.dalsi { color: var(--tlumene); font-size: 0.95rem; margin: 14px 0 0; min-height: 1.5em; }
+
+.pata { max-width: 560px; margin: 0 auto; padding: 12px 16px 18px; color: #8f7a63; font-size: 0.8rem; text-align: center; }
+.pata code { font-size: 0.95em; }
